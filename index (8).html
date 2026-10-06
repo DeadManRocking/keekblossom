@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffd9e4">
+<title>Kiki's Good Morning Butterflowers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦋</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#5b3a5e;--soft:#8a6a8c;--card:rgba(255,255,255,.55)}
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%}
+body{font-family:ui-rounded,"SF Pro Rounded","Nunito",system-ui,sans-serif;color:var(--ink);
+  background:linear-gradient(170deg,#ffd6e3 0%,#ffe8c2 48%,#d9cff5 100%) fixed;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1.4rem;padding:4.5rem 1.4rem 2.5rem;text-align:center}
+[hidden]{display:none!important}
+h1{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:500;font-size:clamp(2.4rem,10vw,3.6rem);line-height:1.08;letter-spacing:-.01em}
+.sub{color:var(--soft);font-size:1.02rem;line-height:1.5;max-width:26ch}
+.name{color:var(--soft);font-size:.9rem}
+.frame{position:relative;width:min(86vw,420px);aspect-ratio:1;border-radius:36px;overflow:hidden;background:#fff3f6;
+  box-shadow:0 18px 50px rgba(150,90,150,.28),0 2px 8px rgba(150,90,150,.12)}
+.frame svg{position:absolute;inset:0;width:100%;height:100%}
+.frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.6s ease}
+.frame img.on{opacity:1}
+.thumb img{border-radius:50%}
+.frame::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  box-shadow:inset 0 0 70px rgba(255,214,236,.45);background:radial-gradient(circle at 50% 40%,rgba(255,245,210,.2),transparent 60%)}
+.sp{position:absolute;z-index:2;color:#fff;font-style:normal;pointer-events:none;opacity:0;text-shadow:0 0 8px #fff,0 0 18px #ffc9ec;animation:tw 4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:.95;transform:scale(1.1)}}
+.thumb{width:150px;border-radius:50%;border:0;padding:0;cursor:pointer}
+.thumb svg{border-radius:50%}
+.pill{background:var(--card);border-radius:999px;padding:.7rem 1.2rem;font-size:.98rem;box-shadow:0 4px 18px rgba(150,90,150,.15);backdrop-filter:blur(6px)}
+.hint{font-size:.82rem;color:var(--soft)}
+.big h1{animation:rise 1.4s ease both}
+.big .sub{animation:rise 1.4s .35s ease both}
+.big .frame{animation:rise 1.8s .7s ease both}
+.big .name{animation:rise 1.4s 1.2s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.tg{position:fixed;top:calc(env(safe-area-inset-top) + 14px);right:14px;z-index:5;width:54px;height:32px;border-radius:999px;border:0;cursor:pointer;
+  background:rgba(91,58,94,.22);transition:background .25s;padding:0;opacity:.85}
+.tg[aria-checked=true]{background:#f3a6c0}
+.tg i{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;
+  font-style:normal;font-size:15px;transition:transform .25s;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.tg[aria-checked=true] i{transform:translateX(22px)}
+.tg:focus-visible,.thumb:focus-visible{outline:3px solid #8a5fb8;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){.sp{opacity:.7}}
+</style>
+</head>
+<body>
+<button class="tg" id="tg" role="switch" aria-checked="true" aria-label="Morning Bloom on or off"><i id="ti">🌸</i></button>
+
+<main id="big" class="big" hidden>
+  <h1>Good Morning Keekness :)</h1>
+  <p class="sub" id="line"></p>
+  <div class="frame" id="bigFrame" role="img" aria-label="Today's butterflower"></div>
+  <p class="name" id="bigName"></p>
+</main>
+
+<main id="seen" hidden>
+  <button class="thumb frame" id="thumb" aria-label="Show today's flower again"></button>
+  <p class="pill">You've already had your good morning today 🦋</p>
+  <p class="hint">Tap the flower to see it again</p>
+</main>
+
+<main id="off" hidden>
+  <p class="sub">Morning Bloom is resting.<br>Flip the switch whenever you want it back.</p>
+</main>
+
+<script>
+const ON_KEY="morningBloomActive", DATE_KEY="lastShownDate";
+const $=id=>document.getElementById(id);
+const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const set=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+
+const now=new Date(), pad=n=>String(n).padStart(2,"0");
+const today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+const dayNumber=Math.round((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-Date.UTC(2024,0,1))/864e5);
+
+/* Butterflowers: the flower leads, the butterfly shows up in the wings behind it.
+   [name, petal outer, petal inner, wing fill, wing edge, wing marks, petals/ring, rings, roundness, core color, core size] */
+const HYBRIDS=[
+ ["Rose Monarch","#ffc0d4","#d4336f","#ffab4f","#4a2336","dots",6,5,.34,"#f6c453",.13],
+ ["Orchid Swallowtail","#f8d9ff","#b04fd0","#ffe27a","#2d1b3d","veins",5,2,.2,"#ffd86b",.12],
+ ["Lavender Moth","#dccbff","#8a5cd6","#f0e8ff","#9d86cf","veins",8,3,.1,"#fff0a8",.1],
+ ["Peony Morpho","#c4e6ff","#4f8fe8","#5db7ff","#153a73","veins",8,5,.4,"#ffe9a3",.1],
+ ["Sunflower Painted Lady","#ffe27a","#e89a1c","#ff9d5c","#5a3318","eye",14,2,.1,"#5a3318",.4],
+ ["Lotus Luna","#ffd6ea","#ee69a5","#c8f0c0","#5fa56a","eye",8,3,.12,"#ffe58a",.13],
+ ["Cherry Blossom Skipper","#ffe6ee","#ff9db8","#ffd2a1","#8a4b2a","dots",5,2,.32,"#ffcf6b",.12],
+ ["Hibiscus Birdwing","#ff9f7e","#e5305a","#5ee0a0","#0e3b2b","dots",5,2,.36,"#ffd24d",.1],
+ ["Iris Admiral","#d0b3ff","#5b3fc4","#ff6b5e","#2a1a3c","dots",6,2,.26,"#ffd24d",.1],
+ ["Dahlia Peacock","#ffb8a6","#c2185b","#4fb3d9","#1b2a5e","eye",12,5,.16,"#ffd86b",.1],
+ ["Wisteria Glasswing","#e8dcff","#9b7bea","#f6f2ff","#8e7acb","veins",6,3,.2,"#fff0a8",.1],
+ ["Poppy Fritillary","#ffa25d","#e3481c","#ffc277","#4a2a1a","dots",5,3,.42,"#3a2430",.2],
+ ["Magnolia Dawn Moth","#ffe3d4","#ff9f87","#ffe9c9","#c78d6b","veins",7,3,.26,"#ffe08a",.12],
+ ["Tulip Blue","#c4e8ff","#6eb0f0","#a9d9ff","#3e6fb3","veins",6,2,.3,"#fff0a8",.1]
+];
+const LINES=["Today is a soft place to land.","You make the morning warmer.","Take a slow breath. You've got this.",
+ "Something lovely is already on its way.","Go gently, bloom anyway.","Wings first, worries later.","You are someone's favorite hello."];
+const md=(n,m)=>((n%m)+m)%m;
+const hy=HYBRIDS[md(dayNumber,HYBRIDS.length)], line=LINES[md(dayNumber,LINES.length)];
+
+/* ---- painted in code ---- */
+const mix=(a,b,t)=>{const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),x=p(a),y=p(b);
+  return "#"+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,"0")).join("")};
+const rng=seed=>{let s=(seed*2654435761+12345)%4294967296||1;return()=>((s=(s*1664525+1013904223)%4294967296)/4294967296)};
+const petal=(l,w,r)=>`M0 0C${-w} ${-l*.3} ${-w*.8} ${-l*(.8+r)} 0 ${-l}C${w*.8} ${-l*(.8+r)} ${w} ${-l*.3} 0 0Z`;
+let uid=0;
+function art(seed,h){
+  const [,c1,c2,wf,we,st,n,L,r,core,cr]=h, R=rng(seed), u="u"+(++uid), cx=200, cy=196, K=84, f=x=>x.toFixed(1);
+  let o=`<svg viewBox="0 0 400 400" aria-hidden="true"><defs>
+  <radialGradient id="${u}b" cx=".5" cy=".46" r=".75"><stop offset="0" stop-color="#fff8e1"/><stop offset=".55" stop-color="${mix(c1,"#ffffff",.62)}"/><stop offset="1" stop-color="${mix(c2,"#d9cff5",.55)}"/></radialGradient>
+  <radialGradient id="${u}w" cx="1" cy=".8" r="1"><stop offset="0" stop-color="${mix(wf,"#ffffff",.55)}" stop-opacity=".5"/><stop offset=".55" stop-color="${wf}" stop-opacity=".85"/><stop offset="1" stop-color="${mix(wf,c2,.4)}" stop-opacity=".95"/></radialGradient><filter id="${u}f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+  <radialGradient id="${u}g"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+  <rect width="400" height="400" fill="url(#${u}b)"/>`;
+  for(let i=0;i<10;i++)o+=`<circle cx="${f(R()*400)}" cy="${f(R()*400)}" r="${f(6+R()*18)}" fill="#fff" opacity="${f(.12+R()*.16)}"/>`;
+  o+=`<circle cx="${cx}" cy="${cy}" r="170" fill="url(#${u}g)" opacity=".85"/>`;
+  // stem + leaves
+  const lf=mix("#8fd19e",c2,.12);
+  o+=`<path d="M200 270C204 320 196 360 200 400" stroke="${mix("#6fb67f","#3d6e4a",.3)}" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M200 352C160 336 126 350 108 380C150 388 186 378 200 352Z" fill="${lf}"/><path d="M200 330C238 312 274 324 292 350C252 360 218 352 200 330Z" fill="${mix(lf,"#ffffff",.15)}"/>`;
+  // butterfly wings behind the bloom
+  const up="M0 0C-20 -70 -100 -140 -150 -105C-185 -80 -150 -10 -105 10C-60 28 -20 18 0 0Z",
+        lo="M0 8C-45 24 -118 40 -110 92C-103 134 -42 122 -12 72C-2 52 0 30 0 8Z";
+  const vo=st==="veins"?.5:.28;
+  let w=`<path d="${up}" fill="url(#${u}w)" stroke="${mix(we,wf,.35)}" stroke-opacity=".55" stroke-width="1.8" stroke-linejoin="round"/><path d="${lo}" fill="url(#${u}w)" stroke="${mix(we,wf,.35)}" stroke-opacity=".55" stroke-width="1.8" stroke-linejoin="round"/>`;
+  [[-150,-105],[-136,-62],[-106,8],[-122,-92],[-70,-96]].forEach(p=>w+=`<path d="M0 0L${p[0]} ${p[1]}" stroke="${we}" stroke-opacity="${vo}" stroke-width="1.5" fill="none"/>`);
+  [[-110,92],[-72,116],[-32,102]].forEach(p=>w+=`<path d="M0 8L${p[0]} ${p[1]}" stroke="${we}" stroke-opacity="${vo}" stroke-width="1.5" fill="none"/>`);
+  if(st==="dots")[[-148,-100,5],[-165,-78,4.2],[-160,-48,4],[-138,-16,3.6],[-112,100,4],[-80,122,3.6]].forEach(d=>w+=`<circle cx="${d[0]}" cy="${d[1]}" r="${d[2]}" fill="#fff" opacity=".92"/>`);
+  if(st==="eye")[[-118,-78,17],[-84,96,11]].forEach(d=>w+=`<circle cx="${d[0]}" cy="${d[1]}" r="${d[2]}" fill="${mix(wf,"#ffffff",.45)}"/><circle cx="${d[0]}" cy="${d[1]}" r="${d[2]*.64}" fill="${we}"/><circle cx="${d[0]-2}" cy="${d[1]-2}" r="${d[2]*.26}" fill="#fff"/>`);
+  const gw=`<path d="${up}" fill="${wf}"/><path d="${lo}" fill="${wf}"/>`;
+  o+=`<g filter="url(#${u}f)" opacity=".6"><g transform="translate(${cx} ${cy-6})">${gw}</g><g transform="translate(${cx} ${cy-6}) scale(-1 1)">${gw}</g></g>`;
+  o+=`<g transform="translate(${cx} ${cy-6})">${w}</g><g transform="translate(${cx} ${cy-6}) scale(-1 1)">${w}</g>`;
+  // the bloom, front and centre
+  o+=`<circle cx="${cx}" cy="${cy}" r="${f(K*1.02)}" fill="${c1}" filter="url(#${u}f)" opacity=".55"/>`;
+  let df="";
+  for(let li=0;li<L;li++){
+    const t=L>1?li/(L-1):0, len=K*(1-li*(.6/L)), wid=len*(.3+r), off=li*(180/n)+R()*8, col=mix(c1,c2,Math.pow(t,.9));
+    df+=`<radialGradient id="${u}p${li}" cx=".5" cy="1" r="1"><stop offset="0" stop-color="${mix(col,c2,.55)}"/><stop offset=".6" stop-color="${col}"/><stop offset="1" stop-color="${mix(col,"#ffffff",.38)}"/></radialGradient>`;
+    const d=petal(len,wid,r);
+    for(let i=0;i<n;i++)o+=`<g transform="translate(${cx} ${cy}) rotate(${f(off+i*360/n)})"><path d="${d}" fill="url(#${u}p${li})" stroke="${mix(c2,"#ffffff",.3)}" stroke-opacity=".35" stroke-width=".8"/><path d="M0 ${f(-len*.12)}Q${f(wid*.2)} ${f(-len*.55)} 0 ${f(-len*.86)}" stroke="#fff" stroke-opacity=".28" stroke-width="1.4" fill="none" stroke-linecap="round"/></g>`;
+  }
+  o=o.replace("</defs>",df+"</defs>");
+  o+=`<circle cx="${cx}" cy="${cy}" r="${f(K*cr)}" fill="${core}"/><circle cx="${cx-3}" cy="${cy-3}" r="${f(K*cr*.45)}" fill="#fff" opacity=".28"/>`;
+  for(let i=0;i<12;i++){const a=i*Math.PI/6,rr=K*cr*1.2;o+=`<circle cx="${f(cx+Math.cos(a)*rr)}" cy="${f(cy+Math.sin(a)*rr)}" r="2.3" fill="${mix(core,"#ffffff",.55)}"/>`}
+  // tiny butterflies + sparkles
+  [[62,74,1.1,-20],[338,104,.9,18],[322,336,1,-12]].forEach(m=>{const x=m[0]+R()*14,y=m[1]+R()*14,c=mix(wf,"#ffffff",.15);
+    o+=`<g transform="translate(${f(x)} ${f(y)}) rotate(${m[3]}) scale(${m[2]})"><ellipse cx="-6" cy="-3" rx="7" ry="4.6" transform="rotate(-25 -6 -3)" fill="${c}"/><ellipse cx="6" cy="-3" rx="7" ry="4.6" transform="rotate(25 6 -3)" fill="${c}"/><ellipse cx="-4.5" cy="4" rx="5" ry="3.2" fill="${c}"/><ellipse cx="4.5" cy="4" rx="5" ry="3.2" fill="${c}"/><rect x="-.8" y="-7" width="1.6" height="14" rx=".8" fill="${we}"/></g>`});
+  for(let i=0;i<14;i++)o+=`<circle cx="${f(R()*400)}" cy="${f(R()*400)}" r="${f(1+R()*2)}" fill="#fff" opacity="${f(.45+R()*.45)}"/>`;
+  for(let i=0;i<6;i++){const x=40+R()*320,y=40+R()*320,k=.6+R()*.9;o+=`<path transform="translate(${f(x)} ${f(y)}) scale(${f(k)})" d="M0 -9Q1 -1 9 0Q1 1 0 9Q-1 1 -9 0Q-1 -1 0 -9Z" fill="#fff" opacity=".85"/>`}
+  return o+"</svg>";
+}
+
+/* ---- AI painting (free, no key): flower-first prompts; the painted flower above is the instant fallback ---- */
+const DESC=["a luminous pink rose in full bloom whose outer petals unfold into two glowing translucent monarch-orange butterfly wings",
+"a glowing violet orchid in full bloom whose lower petals stretch into long swallowtail butterfly tails with yellow and black markings",
+"a glowing lavender blossom whose petals flutter outward like pale dusted moth wings",
+"a giant ruffled peony shimmering iridescent blue, its petals opening like morpho butterfly wings",
+"a radiant golden sunflower whose petals are patterned orange, brown and white like painted lady butterfly wings",
+"a pink lotus glowing on still water, long pale green petal tails trailing like a luna moth",
+"a glowing branch of cherry blossoms, petals lifting off like tiny butterflies in a gentle swirl",
+"a coral hibiscus streaked with emerald and black like birdwing butterfly wings, glowing",
+"a violet iris glowing from within, petals marked with red-admiral red bands and white spots",
+"a crimson dahlia in full bloom, petal tips marked with glowing peacock butterfly eyespots",
+"cascading wisteria whose translucent petals shimmer like glasswing butterfly wings",
+"a glowing orange poppy with silky petals dotted with silver fritillary spots, edges like wings",
+"a glowing peach magnolia at sunrise, petals dusted like soft moth wings",
+"a sky-blue tulip with delicate petals shaped like butterfly wings, glowing"];
+const STYLE=", the flower is the main subject, ethereal fantasy digital painting, glowing translucent petals, sparkling magic dust, enchanted garden at dawn, rich jewel colors, intricate detail, cinematic soft light, no person, no face";
+const IMG="https://image.pollinations.ai/prompt/"+encodeURIComponent("fantasy art of "+DESC[md(dayNumber,DESC.length)]+STYLE)+"?seed="+dayNumber+"&width=1024&height=1024&nologo=true&model=flux";
+function sparkles(el){for(let i=0;i<7;i++){const s=document.createElement("i");s.className="sp";s.textContent="\u2726";
+  s.style.cssText=`left:${8+Math.random()*84}%;top:${8+Math.random()*84}%;font-size:${10+Math.random()*14}px;animation-delay:${(Math.random()*4).toFixed(1)}s`;el.appendChild(s)}}
+function paint(el){
+  el.innerHTML=art(dayNumber,hy); sparkles(el);
+  const im=new Image(); im.alt=hy[0];
+  im.onload=()=>{el.appendChild(im);requestAnimationFrame(()=>im.classList.add("on"))};
+  im.src=IMG; // if it fails, the painted flower simply stays
+}
+
+function show(id){["big","seen","off"].forEach(x=>$(x).hidden=x!==id)}
+function showBig(){
+  $("line").textContent=line; $("bigName").textContent=hy[0];
+  paint($("bigFrame")); $("bigFrame").setAttribute("aria-label",hy[0]); show("big");
+  const m=$("big"); m.classList.remove("big"); void m.offsetWidth; m.classList.add("big");
+}
+function showSeen(){paint($("thumb")); show("seen")}
+function render(){
+  const active=get(ON_KEY)!=="false";
+  $("tg").setAttribute("aria-checked",active); $("ti").textContent=active?"🌸":"🌙";
+  if(!active) return show("off");
+  if(get(DATE_KEY)!==today){set(DATE_KEY,today);showBig()} else showSeen();
+}
+$("tg").onclick=()=>{set(ON_KEY,get(ON_KEY)==="false"?"true":"false");render()};
+$("thumb").onclick=showBig;
+render();
+</script>
+</body>
+</html>
